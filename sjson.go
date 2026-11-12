@@ -563,26 +563,23 @@ func set(jstr, path, raw string,
 			if stringify {
 				sz += 2
 			}
-			if inplace && sz <= len(jstr) {
-				if !stringify || !mustMarshalString(raw) {
-					jsonh := *(*stringHeader)(unsafe.Pointer(&jstr))
-					jsonbh := sliceHeader{
-						data: jsonh.data, len: jsonh.len, cap: jsonh.len}
-					jbytes := *(*[]byte)(unsafe.Pointer(&jsonbh))
-					if stringify {
-						jbytes[res.Index] = '"'
-						copy(jbytes[res.Index+1:], []byte(raw))
-						jbytes[res.Index+1+len(raw)] = '"'
-						copy(jbytes[res.Index+1+len(raw)+1:],
-							jbytes[res.Index+len(res.Raw):])
-					} else {
-						copy(jbytes[res.Index:], []byte(raw))
-						copy(jbytes[res.Index+len(raw):],
-							jbytes[res.Index+len(res.Raw):])
-					}
-					return jbytes[:sz], nil
+			if inplace && sz <= len(jstr) && (!stringify || !mustMarshalString(raw)) {
+				jsonh := *(*stringHeader)(unsafe.Pointer(&jstr))
+				jsonbh := sliceHeader{
+					data: jsonh.data, len: jsonh.len, cap: jsonh.len}
+				jbytes := *(*[]byte)(unsafe.Pointer(&jsonbh))
+				if stringify {
+					jbytes[res.Index] = '"'
+					copy(jbytes[res.Index+1:], []byte(raw))
+					jbytes[res.Index+1+len(raw)] = '"'
+					copy(jbytes[res.Index+1+len(raw)+1:],
+						jbytes[res.Index+len(res.Raw):])
+				} else {
+					copy(jbytes[res.Index:], []byte(raw))
+					copy(jbytes[res.Index+len(raw):],
+						jbytes[res.Index+len(res.Raw):])
 				}
-				return []byte(jstr), nil
+				return jbytes[:sz], nil
 			}
 			buf := make([]byte, 0, sz)
 			buf = append(buf, jstr[:res.Index]...)

@@ -438,3 +438,47 @@ func TestIssue99(t *testing.T) {
 		t.FailNow()
 	}
 }
+
+func TestReplaceInPlaceWithSpecialChars(t *testing.T) {
+	opts := &Options{Optimistic: true, ReplaceInPlace: true}
+
+	// In-place replacement with safe ASCII string
+	json := []byte(`{"name":"Alexander"}`)
+	res, err := SetBytesOptions(json, "name", "Alex", opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(res) != `{"name":"Alex"}` {
+		t.Fatalf("expected '{\"name\":\"Alex\"}', got '%s'", string(res))
+	}
+
+	// Replacement with multibyte UTF-8 character (issue #85)
+	json = []byte(`{"currency":"USD"}`)
+	res, err = SetBytesOptions(json, "currency", "₫", opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(res) != `{"currency":"₫"}` {
+		t.Fatalf("expected '{\"currency\":\"₫\"}', got '%s'", string(res))
+	}
+
+	// Replacement with escaped quotes
+	json = []byte(`{"greeting":"hello world"}`)
+	res, err = SetBytesOptions(json, "greeting", `he"llo`, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(res) != `{"greeting":"he\"llo"}` {
+		t.Fatalf("expected '{\"greeting\":\"he\\\"llo\"}', got '%s'", string(res))
+	}
+
+	// Replacement with newlines
+	json = []byte(`{"msg":"long message here"}`)
+	res, err = SetBytesOptions(json, "msg", "line1\nline2", opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(res) != `{"msg":"line1\nline2"}` {
+		t.Fatalf("expected '{\"msg\":\"line1\\nline2\"}', got '%s'", string(res))
+	}
+}
